@@ -46,6 +46,29 @@ class buttonDevice(Device):
     this_device_type_name = 'SmartSense Button'
     status_tags = []
 
+    def __init__(self):
+        self.temperature = 0.0
+        self.battery = 0
+        super().__init__()
+
+    def send_data(self):
+        button_data = [
+            {
+                "measurement": "button",
+                "tags": {
+                    "label": f"{self.label}"
+                },
+                "fields": {
+                    "temperature": self.temperature,
+                    "battery": self.battery,
+                }
+            }
+        ]
+        client = InfluxDBClient('localhost', 8086, username=INFLUX_USER,
+                                password=INFLUX_PASSWORD, database=INFLUX_DATABASE)
+        client.write_points(button_data)
+        logger.info(f'Wrote button data to influx: {self.label}')
+
 
 class waterLeakDevice(Device):
     status_tags = ['temperatureMeasurement', 'battery', 'waterSensor']
@@ -80,12 +103,60 @@ class waterLeakDevice(Device):
 
 class multiDevice(Device):
     this_device_type_name = 'SmartSense Multi Sensor'
-    status_tags = []
+    status_tags = ['battery', 'temperature',
+                   'contactSensor', 'accelerationSensor', 'threeAxis']
+
+    def __init__(self):
+        self.battery = 0
+        self.temperature = 0.0
+        self.contactSensor = False
+        self.threeAxis = []
+        self.acceleration = False
+        super().__init__()
+
+    def send_data(self):
+        multi_sensor_data = [
+            {
+                "measurement": "multi_sensor",
+                "tags": {
+                    "label": f"{self.label}"
+                },
+                "fields": {
+                    "temperature": self.temperature,
+                    "battery": self.battery,
+                }
+            }
+        ]
+        client = InfluxDBClient('localhost', 8086, username=INFLUX_USER,
+                                password=INFLUX_PASSWORD, database=INFLUX_DATABASE)
+        client.write_points(multi_sensor_data)
+        logger.info(f'Wrote multisensor data to influx: {self.label}')
 
 
 class powerOutlet(Device):
     this_device_type_name = 'SmartPower Outlet'
     status_tags = []
+
+    def __init__(self):
+        self.power = 0.0
+        super().__init__()
+
+    def send_data(self):
+        power_outlet_data = [
+            {
+                "measurement": "power_outlet",
+                "tags": {
+                    "label": f"{self.label}"
+                },
+                "fields": {
+                    "power": self.power,
+                }
+            }
+        ]
+        client = InfluxDBClient('localhost', 8086, username=INFLUX_USER,
+                                password=INFLUX_PASSWORD, database=INFLUX_DATABASE)
+        client.write_points(power_outlet_data)
+        logger.info(f'Wrote power data to influx: {self.label}')
 
 
 class temperatureMeasurement(object):
@@ -136,7 +207,7 @@ for device in devices:
             water_leak_sensor.send_data()
             influx_counted += 1
         except:
-            print('failed water sensor')
+            logger.warning('failed water sensor')
     elif new_device.device_type_name == buttonDevice.this_device_type_name:
         button_device = buttonDevice()
         button_device.label = new_device.label
@@ -144,13 +215,30 @@ for device in devices:
             button_device.battery = status_json['components']['main']['battery']['battery']['value']
             button_device.temperature = status_json['components'][
                 'main']['temperatureMeasurement']['temperature']['value']
-
+            button_device.send_data()
+            influx_counted += 1
         except:
-            print('failed button sensor')
+            logger.warning('failed button sensor')
     elif new_device.device_type_name == multiDevice.this_device_type_name:
-        pass
+        multi_device = multiDevice()
+        multi_device.label = new_device.label
+        try:
+            multi_device.battery = status_json['components']['main']['battery']['battery']['value']
+            multi_device.temperature = status_json['components'][
+                'main']['temperatureMeasurement']['temperature']['value']
+            multi_device.send_data()
+            influx_counted += 1
+        except:
+            logger.warning('failed multi sensor')
     elif new_device.device_type_name == powerOutlet.this_device_type_name:
-        pass
+        outlet_device = powerOutlet()
+        outlet_device.label = new_device.label
+        try:
+            outlet_device.power = status_json['components']['main']['powerMeter']['power']['value']
+            outlet_device.send_data()
+            influx_counted += 1
+        except:
+            logger.warning('failed outlet sensor')
 
     device_list.append(new_device)
 
