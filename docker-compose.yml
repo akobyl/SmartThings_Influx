@@ -1,0 +1,29 @@
+version: '3'
+
+services: 
+  smartthings_influx:
+    build: .
+    depends_on: 
+      - influxdb
+    environment: 
+      - INFLUX_NAME=influxdb
+      - INFLUX_DATABASE=mydb
+      - SMARTTHINGS_API_KEY=${SMARTTHINGS_API_KEY}
+  influxdb:
+    image: "influxdb:1.8-alpine"
+    environment: 
+      - INFLUXDB_DB=mydb
+      - INFLUXDB_REPORTING_DISABLED=true
+    volumes: 
+      - ${INFLUX_VOLUME}:/var/lib/influxdb
+      - $PWD/influxdb.conf:/etc/influxdb/influxdb.conf:ro
+  grafana:
+    image: "grafana/grafana"
+    ports:
+      - "3000:3000"
+    depends_on: 
+      - influxdb
+    volumes: 
+      - ${GRAFANA_VOLUME}:/var/lib/grafana
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
