@@ -2,13 +2,24 @@ version: '3'
 
 services: 
   smartthings_influx:
-    build: .
+    build: ./smartthings
     depends_on: 
       - influxdb
     environment: 
       - INFLUX_NAME=influxdb
       - INFLUX_DATABASE=mydb
       - SMARTTHINGS_API_KEY=${SMARTTHINGS_API_KEY}
+    restart: unless-stopped
+  weather:
+    build: ./weather
+    depends_on: 
+      - influxdb
+    environment: 
+      - INFLUX_NAME=influxdb
+      - INFLUX_DATABASE=mydb
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+      - OPENWEATHER_CITY_ID=${OPENWEATHER_CITY_ID}
+    restart: unless-stopped
   influxdb:
     image: "influxdb:1.8-alpine"
     environment: 

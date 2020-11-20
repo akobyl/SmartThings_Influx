@@ -2,7 +2,6 @@ import schedule
 import requests
 from influxdb import InfluxDBClient
 import logging
-from logging.handlers import RotatingFileHandler
 import os
 import time
 
@@ -11,7 +10,7 @@ import time
 SMARTTHINGS_API_KEY = os.environ["SMARTTHINGS_API_KEY"]
 KEY = "Bearer " + SMARTTHINGS_API_KEY
 
-# Influx database, user, and password
+# Influx configuration
 INFLUX_NAME = os.environ["INFLUX_NAME"]
 INFLUX_DATABASE = os.environ["INFLUX_DATABASE"]
 
@@ -242,8 +241,9 @@ def run_script():
     )
 
 
-schedule.every(10).minutes.do(run_script)
+schedule.every(5).minutes.do(run_script)
 
 while True:
     schedule.run_pending()
     time.sleep(1)
+    
